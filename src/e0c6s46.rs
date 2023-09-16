@@ -48,7 +48,7 @@ pub unsafe fn run_cpu(){
         for opcode in instruction_set::ISA.iter(){
             if (op & opcode.mask == opcode.code) {
                 (opcode.operation)(&mut cpu, op);
-                println!("{:#06x} {} {:#05x}",cpu.program_counter, opcode.name, opcode.code);
+                println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x}",cpu.program_counter, opcode.name, opcode.code, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b);
 
                 if opcode.name != "PSET"{
                     cpu.new_pointer = (cpu.program_counter >> 8) & 0x1F;
