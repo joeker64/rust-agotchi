@@ -6,6 +6,13 @@ const FLAG_Z: u16 = 0x1 << 1;
 const FLAG_D: u16 = 0x1 << 2;
 const FLAG_I: u16 = 0x1 << 3;
 
+const MASK_4B:u16 =0xF00;
+const MASK_6B:u16 =0xFC0;
+const MASK_7B:u16 =0xFE0;
+const MASK_8B:u16 =0xFF0;
+const MASK_10B:u16 =0xFFC;
+const MASK_12B:u16 =0xFFF;
+
 fn clear_flag_c(flags: u16) -> u16{
     return flags & !FLAG_C;
 }
@@ -33,10 +40,11 @@ fn set_flag_i(flags: u16) -> u16{
 }
 
 pub struct Opcode {
-    name: &'static str,
-    code: u16,
-    cycles: u8,
-    operation: unsafe fn (*mut super::CPU, u16),
+    pub name: &'static str,
+    pub code: u16,
+    pub cycles: u8,
+    pub operation: unsafe fn (*mut super::CPU, u16),
+    pub mask: u16,
 }
 
 unsafe fn get_rq (cpu: *mut super::CPU, rq: u16) -> u16{
@@ -78,26 +86,26 @@ unsafe fn pset_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).new_pointer = (step & 0x1F);
 }
 unsafe fn jp_s_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).next_program_counter = step & 0xFF;
+    (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
 }
 unsafe fn jp_cs_operation(cpu: *mut super::CPU, step: u16){
     if ((*cpu).flags & FLAG_C) == 1 {
-        (*cpu).next_program_counter = step & 0xFF;
+        (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_ncs_operation(cpu: *mut super::CPU, step: u16){
     if ((*cpu).flags & FLAG_C) != 1 {
-        (*cpu).next_program_counter = step & 0xFF;
+        (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_zs_operation(cpu: *mut super::CPU, step: u16){
     if ((*cpu).flags & FLAG_Z) == 1 {
-        (*cpu).next_program_counter = step & 0xFF;
+        (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_nzs_operation(cpu: *mut super::CPU, step: u16){
     if ((*cpu).flags & FLAG_Z) != 1 {
-        (*cpu).next_program_counter = step & 0xFF;
+        (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jpba_operation(cpu: *mut super::CPU, step: u16){
@@ -892,646 +900,754 @@ pub const ISA : [Opcode; 108] = [
         code: 0xFFB,
         cycles: 5,
         operation: nop5_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "NOP7",
         code: 0xFFF,
         cycles: 7,
         operation: nop7_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "HALT",
         code: 0xFF8,
         cycles: 5,
         operation: halt_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PSET",
         code: 0xE40,
         cycles: 5,
         operation: pset_operation,
+        mask: MASK_7B,
     },
     Opcode{
         name: "JP_S",
         code: 0x000,
         cycles: 5,
         operation: jp_s_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "JP_CS",
         code: 0x200,
         cycles: 5,
         operation: jp_cs_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "JP_NCS",
         code: 0x300,
         cycles: 5,
         operation: jp_ncs_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "JP_ZS",
         code: 0x600,
         cycles: 5,
         operation: jp_zs_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "JP_NZS",
         code: 0x700,
         cycles: 5,
         operation: jp_nzs_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "JPBA",
         code: 0xFE8,
         cycles: 5,
         operation: jpba_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "CALL",
         code: 0x400,
         cycles: 7,
         operation: call_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "CALZ",
         code: 0x500,
         cycles: 7,
         operation: callz_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "RET",
         code: 0xFDF,
         cycles: 7,
         operation: ret_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "RETS",
         code: 0xFDE,
         cycles: 12,
         operation: ret_s_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "RETD",
         code: 0x100,
         cycles: 12,
         operation: ret_d_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "INC_X",
         code: 0xEE0,
         cycles: 5,
         operation: inc_x_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "INC_Y",
         code: 0xEF0,
         cycles: 5,
         operation: inc_y_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "LD_X",
         code: 0xB00,
         cycles: 5,
         operation: ld_x_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "LD_Y",
         code: 0x800,
         cycles: 5,
         operation: ld_y_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "LD_XPR",
         code: 0xE80,
         cycles: 5,
         operation: ld_xpr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_XHR",
         code: 0xE84,
         cycles: 5,
         operation: ld_xhr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_XLR",
         code: 0xE88,
         cycles: 5,
-        operation: ld_xlr_operation
+        operation: ld_xlr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_YPR",
         code: 0xE90,
         cycles: 5,
-        operation: ld_ypr_operation
+        operation: ld_ypr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_YHR",
         code: 0xE94,
         cycles: 5,
         operation: ld_yhr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_YLR",
         code: 0xE98,
         cycles: 5,
         operation: ld_ylr_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RXP",
         code: 0xEA0,
         cycles: 5,
         operation: ld_rxp_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RXH",
         code: 0xEA4,
         cycles: 5,
         operation: ld_rxh_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RXL",
         code: 0xEA8,
         cycles: 5,
         operation: ld_rxl_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RYP",
         code: 0xEB0,
         cycles: 5,
         operation: ld_ryp_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RYH",
         code: 0xEB4,
         cycles: 5,
         operation: ld_ryh_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_YL",
         code: 0xEB8,
         cycles: 5,
         operation: ld_yl_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "ADC_XH",
         code: 0xA00,
         cycles: 7,
         operation: adc_xh_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "ADC_XL",
         code: 0xA10,
         cycles: 7,
         operation: adc_xl_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "ADC_YH",
         code: 0xA20,
         cycles: 7,
         operation: adc_yh_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "ADC_YL",
         code: 0xA30,
         cycles: 7,
         operation: adc_yl_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "CP_XH",
         code: 0xA40,
         cycles: 7,
         operation: cp_xh_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "CP_XL",
         code: 0xA50,
         cycles: 7,
         operation: cp_xl_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "CP_YH",
         code: 0xA60,
         cycles: 7,
         operation: cp_yh_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "CP_YL",
         code: 0xA70,
         cycles: 7,
         operation: cp_yl_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LD_R",
         code: 0xE00,
         cycles: 5,
         operation: ld_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "LD_RQ",
         code: 0xEC0,
         cycles: 5,
         operation: ld_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LD_AM",
         code: 0xFA0,
         cycles: 5,
         operation: ld_am_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LD_BM",
         code: 0xFB0,
         cycles: 5,
-        operation: ld_bm_operation
+        operation: ld_bm_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LD_MA",
         code: 0xF80,
         cycles: 5,
-        operation: ld_ma_operation
+        operation: ld_ma_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LD_MB",
         code: 0xF90,
         cycles: 5,
         operation: ld_mb_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LDPX_MX",
         code: 0xE60,
         cycles: 5,
         operation:ldpx_mx_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LDPX_RQ",
         code: 0xEE0,
         cycles: 5,
         operation: ldpx_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LDPY_MY",
         code: 0xE70,
         cycles: 5,
         operation: ldpy_my_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LDPY_RQ",
         code: 0xEF0,
         cycles: 5,
         operation: ldpy_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "LBPX",
         code: 0x900,
         cycles: 5,
         operation: lbpx_operation,
+        mask: MASK_4B,
     },
     Opcode{
         name: "SET",
         code: 0xF40,
         cycles: 7,
         operation: set_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "RST",
         code: 0xF50,
         cycles: 7,
-        operation: rst_operation
+        operation: rst_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "SCF",
         code: 0xF41,
         cycles: 7,
         operation: scf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "RCF",
         code: 0xF5E,
         cycles: 7,
         operation: rcf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "SZF",
         code: 0xF42,
         cycles: 7,
         operation: szf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "RZF",
         code: 0xF5D,
         cycles: 7,
         operation: rzf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "SDF",
         code: 0xF44,
         cycles: 7,
         operation: sdf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "RDF",
         code: 0xF5B,
         cycles: 7,
         operation: rdf_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "EI",
         code: 0xF48,
         cycles: 7,
         operation: ei_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "DI",
         code: 0xF57,
         cycles: 7,
         operation: di_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "INC",
         code: 0xFDB,
         cycles: 5,
         operation: inc_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "DEC",
         code: 0xFCB,
         cycles: 5,
         operation: dec_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_R",
         code: 0xFC0,
         cycles: 5,
         operation: push_r_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "PUSH_XP",
         code: 0xFC4,
         cycles: 5,
         operation: push_xp_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_XH",
         code: 0xFC5,
         cycles: 5,
         operation: push_xh_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_XL",
         code: 0xFC6,
         cycles: 5,
         operation: push_xl_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_YP",
         code: 0xFC7,
         cycles: 5,
         operation: push_yp_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_YH",
         code: 0xFC8,
         cycles: 5,
-        operation: push_yh_operation
+        operation: push_yh_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_YL",
         code: 0xFC9,
         cycles: 5,
-        operation: push_yl_operation
+        operation: push_yl_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "PUSH_F",
         code: 0xFCA,
         cycles: 5,
         operation: push_f_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_R",
         code: 0xFD0,
         cycles: 5,
         operation: pop_r_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "POP_XP",
         code: 0xFD4,
         cycles: 5,
         operation: pop_xp_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_XH",
         code: 0xFD5,
         cycles: 5,
         operation: pop_xh_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_XL",
         code: 0xFD6,
         cycles: 5,
         operation: pop_xl_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_YP",
         code: 0xFD7,
         cycles: 5,
         operation: pop_yp_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_YH",
         code: 0xFD8,
         cycles: 5,
         operation: pop_yh_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_YL",
         code: 0xFD9,
         cycles: 5,
         operation: pop_yl_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "POP_F",
         code: 0xFDA,
         cycles: 5,
         operation: pop_f_operation,
+        mask: MASK_12B,
     },
     Opcode{
         name: "LD_SPH",
         code: 0xFE0,
         cycles: 5,
         operation: ld_sph_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_SPL",
         code: 0xFF0,
         cycles: 5,
         operation: ld_spl_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RSPH",
         code: 0xFE4,
         cycles: 5,
         operation: ld_rsph_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "LD_RSPL",
         code: 0xFF4,
         cycles: 5,
         operation: ld_rspl_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "ADD_R",
         code: 0xC00,
         cycles: 7,
         operation: add_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "ADD_RQ",
         code: 0xA80,
         cycles: 7,
         operation: add_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "ADC_R",
         code: 0xC40,
         cycles: 7,
         operation: adc_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "ADC_RQ",
         code: 0xA90,
         cycles: 7,
         operation: adc_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "SUB",
         code: 0xAA0,
         cycles: 7,
         operation: sub_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "SBC_R",
         code: 0xB40,
         cycles: 7,
         operation: sbc_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "SBC_RQ",
         code: 0xAB0,
         cycles: 7,
         operation: sbc_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "AND_R",
         code: 0xC80,
         cycles: 7,
         operation: and_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "AND_RQ",
         code: 0xAC0,
         cycles: 7,
         operation: and_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "OR_R",
         code: 0xCC0,
         cycles: 7,
         operation: or_r_operation,
+        mask: MASK_6B,
     },Opcode{
         name: "OR_RQ",
         code: 0xAD0,
         cycles: 7,
         operation: or_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "XOR_R",
         code: 0xD00,
         cycles: 7,
         operation: xor_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "XOR_RQ",
         code: 0xAE0,
         cycles: 7,
         operation: xor_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "CP_R",
         code: 0xDC0,
         cycles: 7,
         operation: cp_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "CP_RQ",
         code: 0xF00,
         cycles: 7,
         operation: cp_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "FAN_R",
         code: 0xD80,
         cycles: 7,
         operation: fan_r_operation,
+        mask: MASK_6B,
     },
     Opcode{
         name: "FAN_RQ",
         code: 0xF10,
         cycles: 7,
         operation: fan_rq_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "RLC",
         code: 0xAF0,
         cycles: 7,
         operation: rlc_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "RRC",
         code: 0xE8C,
         cycles: 5,
         operation: rrc_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "INC_M",
         code: 0xF60,
         cycles: 7,
         operation: inc_m_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "DEC_M",
         code: 0xF70,
         cycles: 7,
         operation: dec_m_operation,
+        mask: MASK_8B,
     },
     Opcode{
         name: "ACPX",
         code: 0xF28,
         cycles: 7,
         operation: acpx_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "ACPY",
         code: 0xF2C,
         cycles: 7,
         operation: acpy_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "SCPX",
         code: 0xF38,
         cycles: 7,
         operation: scpx_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "SCPY",
         code: 0xF3C,
         cycles: 7,
         operation: scpy_operation,
+        mask: MASK_10B,
     },
     Opcode{
         name: "NOT",
         code: 0xD0F,
         cycles: 7,
-        operation: not_operation
+        operation: not_operation,
+        mask: 0xFCF,
     },
 ];

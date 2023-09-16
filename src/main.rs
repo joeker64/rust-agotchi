@@ -2,10 +2,14 @@ pub mod e0c6s46;
 
 fn main() {
 
-    match e0c6s46::read_rom("tama.b"){
-        Ok(data) => println!("{:#06x}",data[256]),
-        Err(err) => println!("Error: {}", err),
+    unsafe{
+        e0c6s46::run_cpu();
     }
+
+    // match e0c6s46::read_rom("tama.b"){
+    //     Ok(data) => println!("{:#06x}",data[256]),
+    //     Err(err) => println!("Error: {}", err),
+    // }
     // unsafe{
     //     let mut cp = e0c6s46::CPU{
     //         register_a: 0,
