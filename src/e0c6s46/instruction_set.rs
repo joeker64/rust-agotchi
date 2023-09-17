@@ -60,7 +60,7 @@ unsafe fn get_rq (cpu: *mut super::CPU, rq: u16) -> u16{
 unsafe fn set_rq (cpu: *mut super::CPU, rq: u16, value: u16) -> [u16; ram::RAM_TOTAL_SIZE as usize]{
     match rq{
         0x0 => {
-            (*cpu).register_a = value; 
+            (*cpu).register_a = value;
             return (*cpu).memory;
         }
         0x1 => {
@@ -89,22 +89,22 @@ unsafe fn jp_s_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
 }
 unsafe fn jp_cs_operation(cpu: *mut super::CPU, step: u16){
-    if ((*cpu).flags & FLAG_C) == 1 {
+    if ((*cpu).flags & FLAG_C) > 0 {
         (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_ncs_operation(cpu: *mut super::CPU, step: u16){
-    if ((*cpu).flags & FLAG_C) != 1 {
+    if ((*cpu).flags & FLAG_C) == 0 {
         (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_zs_operation(cpu: *mut super::CPU, step: u16){
-    if ((*cpu).flags & FLAG_Z) == 1 {
+    if ((*cpu).flags & FLAG_Z) > 0 {
         (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
 unsafe fn jp_nzs_operation(cpu: *mut super::CPU, step: u16){
-    if ((*cpu).flags & FLAG_Z) != 1 {
+    if ((*cpu).flags & FLAG_Z) == 0 {
         (*cpu).next_program_counter = (step & 0xFF) | ((*cpu).new_pointer << 8);
     }
 }
@@ -209,7 +209,7 @@ unsafe fn adc_xh_operation(cpu: *mut super::CPU, step: u16){
 }
 unsafe fn adc_xl_operation(cpu: *mut super::CPU, step: u16){
     let mut temp: u16 = ((*cpu).register_x & 0xF) + (step & 0xF) + FLAG_C;
-    (*cpu).register_x = (temp & 0x4) | ((((*cpu).register_x >> 4) & 0xF) << 4) | ((((*cpu).register_x >> 8) & 0xF) << 4); 
+    (*cpu).register_x = (temp & 0x4) | ((((*cpu).register_x >> 4) & 0xF) << 4) | ((((*cpu).register_x >> 8) & 0xF) << 4);
 
     if (temp >> 4) > 0 {
         (*cpu).flags = set_flag_c((*cpu).flags);
@@ -311,7 +311,7 @@ unsafe fn ld_r_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).memory = set_rq(cpu, (step >> 4) & 0x3, step & 0xF);
 }
 unsafe fn ld_rq_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).memory = set_rq(cpu, (step >> 2) & 0x3, get_rq(cpu, step & 0x2));
+    (*cpu).memory = set_rq(cpu, (step >> 2) & 0x3, get_rq(cpu, step & 0x3));
 }
 unsafe fn ld_am_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).register_a = ram::get_memory((*cpu).memory, step & 0xF);
@@ -377,10 +377,10 @@ unsafe fn di_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).flags = clear_flag_i((*cpu).flags);
 }
 unsafe fn inc_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).stack_pointer = ((*cpu).stack_pointer + 1) & 0xFF; 
+    (*cpu).stack_pointer = ((*cpu).stack_pointer + 1) & 0xFF;
 }
 unsafe fn dec_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).stack_pointer = ((*cpu).stack_pointer - 1) & 0xFF; 
+    (*cpu).stack_pointer = ((*cpu).stack_pointer - 1) & 0xFF;
 }
 unsafe fn push_r_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).stack_pointer = ((*cpu).stack_pointer - 1) & 0xFF;
@@ -450,7 +450,7 @@ unsafe fn ld_sph_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).stack_pointer = ((*cpu).stack_pointer & 0x4) | (get_rq(cpu, step & 0x3) << 4);
 }
 unsafe fn ld_spl_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).stack_pointer = get_rq(cpu, step & 0x3) | (((*cpu).stack_pointer & 0x4) << 4);
+    (*cpu).stack_pointer = get_rq(cpu, step & 0x3) | ((((*cpu).stack_pointer >> 4) & 0xF) << 4);
 }
 unsafe fn ld_rsph_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).memory = set_rq(cpu, step & 0x3 ,((*cpu).stack_pointer >> 4) & 0xf)
@@ -631,8 +631,8 @@ unsafe fn sbc_rq_operation(cpu: *mut super::CPU, step: u16){
     }
 }
 unsafe fn and_r_operation(cpu: *mut super::CPU, step: u16){
-    (*cpu).memory = set_rq(cpu, (step >> 4) & 0x3 , get_rq(cpu,(step >> 4) & 0x3) & (step & 0xF));
-    
+    (*cpu).memory = set_rq(cpu, (step >> 4) & 0x3, get_rq(cpu,(step >> 4) & 0x3) & (step & 0xF));
+
     if get_rq(cpu,(step >> 4) & 0x3) == 0{
         (*cpu).flags = set_flag_z((*cpu).flags);
     }else{
@@ -650,7 +650,7 @@ unsafe fn and_rq_operation(cpu: *mut super::CPU, step: u16){
 }
 unsafe fn or_r_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).memory = set_rq(cpu, (step >> 4) & 0x3, get_rq(cpu,(step >> 4) & 0x3) | (step & 0xF));
-    
+
     if get_rq(cpu,(step >> 4) & 0x3) == 0{
         (*cpu).flags = set_flag_z((*cpu).flags);
     }else{
@@ -668,7 +668,7 @@ unsafe fn or_rq_operation(cpu: *mut super::CPU, step: u16){
 }
 unsafe fn xor_r_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).memory = set_rq(cpu, (step >> 4) & 0x3, get_rq(cpu,(step >> 4) & 0x3) ^ (step & 0xF));
-    
+
     if get_rq(cpu,(step >> 4) & 0x3) == 0{
         (*cpu).flags = set_flag_z((*cpu).flags);
     }else{
@@ -725,7 +725,7 @@ unsafe fn fan_rq_operation(cpu: *mut super::CPU, step: u16){
     }
 }
 unsafe fn rlc_operation(cpu: *mut super::CPU, step: u16){
-    let mut temp: u16 = (get_rq(cpu, step & 0xF) << 1) | ((*cpu).flags & FLAG_C); 
+    let mut temp: u16 = (get_rq(cpu, step & 0xF) << 1) | ((*cpu).flags & FLAG_C);
     if (get_rq(cpu, step & 0xF) & 0x8) > 0{
         (*cpu).flags = set_flag_c((*cpu).flags);
     } else{
@@ -734,7 +734,7 @@ unsafe fn rlc_operation(cpu: *mut super::CPU, step: u16){
     (*cpu).memory = set_rq(cpu, step & 0xF, temp & 0xF);
 }
 unsafe fn rrc_operation(cpu: *mut super::CPU, step: u16){
-    let mut temp: u16 = (get_rq(cpu, step & 0x3) >> 1) | (((*cpu).flags & FLAG_C) << 3); 
+    let mut temp: u16 = (get_rq(cpu, step & 0x3) >> 1) | (((*cpu).flags & FLAG_C) << 3);
     if (get_rq(cpu, step & 0x3) & 0x1) > 0{
         (*cpu).flags = set_flag_c((*cpu).flags);
     } else{

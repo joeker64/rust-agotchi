@@ -14,7 +14,7 @@ pub struct CPU {
     pub flags: u16,
     pub memory: [u16;ram::RAM_TOTAL_SIZE as usize],
     pub stack_pointer: u16,
-    //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug 
+    //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug
 }
 
 pub struct test {
@@ -47,19 +47,20 @@ pub unsafe fn run_cpu(){
         cpu.next_program_counter = (cpu.program_counter + 1) & 0x1FFF;
         for opcode in instruction_set::ISA.iter(){
             if (op & opcode.mask == opcode.code) {
+                println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x} FLAGS = {:#05x}",cpu.program_counter, opcode.name, op, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b, cpu.flags);
                 (opcode.operation)(&mut cpu, op);
-                println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x}",cpu.program_counter, opcode.name, opcode.code, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b);
+
+                cpu.program_counter = cpu.next_program_counter;
 
                 if opcode.name != "PSET"{
                     cpu.new_pointer = (cpu.program_counter >> 8) & 0x1F;
                 }
                 break;
-            }    
+            }
         }
-        cpu.program_counter = cpu.next_program_counter;
         let _ = std::io::stdin().read_line(&mut line);
     }
-} 
+}
 
 impl CPU {
     pub fn new() -> Self {
@@ -76,12 +77,12 @@ impl CPU {
             stack_pointer: 0,
         }
     }
-  
+
     pub fn interpret(&mut self, program: Vec<u8>) {
 
         loop {
             for opcode in instruction_set::ISA.iter(){
-                
+
             }
         }
     }
