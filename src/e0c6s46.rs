@@ -1,7 +1,8 @@
 use std::fs;
 
-pub mod instruction_set;
-pub mod ram;
+mod instruction_set;
+mod ram;
+pub mod interrupts;
 
 pub struct CPU {
     pub register_a: u16,
@@ -12,8 +13,15 @@ pub struct CPU {
     pub next_program_counter: u16,
     pub new_pointer: u16,
     pub flags: u16,
-    pub memory: [u16;ram::RAM_TOTAL_SIZE as usize],
+    pub memory: [u16; ram::RAM_TOTAL_SIZE as usize],
     pub stack_pointer: u16,
+    pub interrupts: [interrupts::interrupt; 6],
+    pub program_timer_data: u16,
+    pub program_timer_reload: u16,
+    pub input_port_state: [u16; 2],
+    pub program_timer_enabled: bool,
+    pub prog_timer_timestamp: u16,
+    pub tick_counter: u16,
     //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug
 }
 
@@ -34,6 +42,13 @@ pub unsafe fn run_cpu(){
         flags: 0,
         memory: [0; ram::RAM_TOTAL_SIZE as usize],
         stack_pointer: 0,
+        interrupts: interrupts::init_interrupts(),
+        program_timer_data: 0,
+        program_timer_reload: 0,
+        input_port_state: [0,0],
+        program_timer_enabled: false,
+        prog_timer_timestamp: 0,
+        tick_counter: 0,
     };
     let mut rom: Vec<u16> =  Vec::new();
     match read_rom("tama.b"){
@@ -59,32 +74,6 @@ pub unsafe fn run_cpu(){
             }
         }
         let _ = std::io::stdin().read_line(&mut line);
-    }
-}
-
-impl CPU {
-    pub fn new() -> Self {
-        CPU {
-            register_a: 0,
-            register_b: 0,
-            register_x: 0,
-            register_y: 0,
-            program_counter: 1 << 8,
-            next_program_counter: 1,
-            new_pointer: 0,
-            flags: 0,
-            memory: [0; ram::RAM_TOTAL_SIZE as usize],
-            stack_pointer: 0,
-        }
-    }
-
-    pub fn interpret(&mut self, program: Vec<u8>) {
-
-        loop {
-            for opcode in instruction_set::ISA.iter(){
-
-            }
-        }
     }
 }
 
