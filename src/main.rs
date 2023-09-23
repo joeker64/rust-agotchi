@@ -1,4 +1,4 @@
-pub mod e0c6s46;
+mod e0c6s46;
 
 fn main() {
 
