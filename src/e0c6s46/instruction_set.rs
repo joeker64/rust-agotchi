@@ -60,9 +60,7 @@ unsafe fn get_rq (cpu: *mut super::CPU, rq: u16) -> u16{
 unsafe fn set_rq (cpu: *mut super::CPU, rq: u16, value: u16){
     match rq{
         0x0 => {
-            println!("a value {:#05x}", value);
             (*cpu).register_a = value;
-            //(*cpu).register_a = 0x6;
         }
         0x1 => {
             (*cpu).register_b = value;
