@@ -55,7 +55,7 @@ pub unsafe fn run_cpu(){
         Ok(data) => rom = data,
         Err(err) => println!("Error: {}", err),
     }
-
+    interrupts::init_io_state(&mut cpu);
     loop{
         let op: u16 = rom[cpu.program_counter as usize];
 

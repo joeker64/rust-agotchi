@@ -38,14 +38,30 @@ pub struct interrupt{
     pub value: u16,
 }
 
-pub fn handle_interrupt(mut interrupts: [interrupt; 6], index: usize, bit: u8) -> [interrupt; 6]{
-    interrupts[index].factor_flag_reg = interrupts[index].factor_flag_reg | (0x1 << bit);
+pub unsafe fn handle_interrupt(cpu: *mut super::CPU, index: usize, bit: u8){
+    (*cpu).interrupts[index].factor_flag_reg = (*cpu).interrupts[index].factor_flag_reg | (0x1 << bit);
 
-    if (interrupts[index].mask_reg & (0x1 << bit)) > 0{
-        interrupts[index].triggered = true;
+    if ((*cpu).interrupts[index].mask_reg & (0x1 << bit)) > 0{
+        (*cpu).interrupts[index].triggered = true;
     }
+}
 
-    return interrupts;
+pub unsafe fn set_input_state(cpu: *mut super::CPU, pin: u8, state_high: bool){
+    (*cpu).input_port_state[(pin & 0x4) as usize] = ((*cpu).input_port_state[(pin & 0x4) as usize] & !(0x1 << (pin & 0x3))) | ((state_high as u16) << (pin & 0x3));
+
+    if !(state_high){
+        match ((pin & 0x4) >> 2){
+            0 => handle_interrupt(cpu, 3, pin & 0x3),
+            1 => handle_interrupt(cpu, 2, pin & 0x3),
+            _ => (),
+        }
+    }
+}
+
+pub unsafe fn init_io_state(cpu: *mut super::CPU){
+    set_input_state(cpu, 0, true);
+    set_input_state(cpu, 1, true);
+    set_input_state(cpu, 2, true);
 }
 
 pub fn init_interrupts() -> [interrupt;6]{
@@ -170,7 +186,7 @@ pub unsafe fn get_io(cpu: *mut super::CPU, pointer: u16) -> u16{
             //return ram::get_memory(cpu, pointer);
         }
         REG_LCD_CONTRAST => {
-            
+
         }
         REG_SVD_CTRL => {
             return (*cpu).memory[(pointer - ram::RAM_IO_ADDR + ram::RAM_SIZE + ram::RAM_DISPLAY_1_SIZE + ram::RAM_DISPLAY_2_SIZE) as usize] & 0x7;
@@ -233,7 +249,7 @@ pub unsafe fn set_io(cpu: *mut super::CPU, pointer: u16, value: u16){
             (*cpu).program_timer_reload = ((*cpu).program_timer_reload & 0xF0) | (value << 4);
         }
         REG_K00_K03_INPUT_PORT => {
-            
+
         }
         REG_K40_K43_BZ_OUTPUT_PORT => {
             //TODO - Add support for buzzer
