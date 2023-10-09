@@ -26,7 +26,7 @@ pub unsafe fn set_memory(cpu: *mut CPU, pointer: u16, value: u16){
         set_io(cpu, pointer, value);
     }
     else{
-        println!("ERROR");
+        println!("ERROR SET MEM, VALUE: {}", pointer);
     }
 
 }
@@ -43,7 +43,7 @@ pub unsafe fn get_memory(cpu: *mut CPU, pointer: u16) -> u16 {
     }
     else if ((RAM_IO_ADDR + RAM_IO_SIZE) > pointer) && (pointer >= RAM_IO_ADDR){
         return get_io(cpu, pointer);
-        //return (*cpu).memory[(pointer - RAM_IO_ADDR + RAM_SIZE + RAM_DISPLAY_1_SIZE + RAM_DISPLAY_2_SIZE) as usize];
     }
+    println!("ERROR GET MEM");
     return 0;
 }

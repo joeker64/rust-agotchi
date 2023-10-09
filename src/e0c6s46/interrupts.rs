@@ -1,5 +1,4 @@
-#[path = "./ram.rs"]
-mod ram;
+use crate::e0c6s46::*;
 
 const REG_CLK_INT_FACTOR_FLAGS: u16 = 0xF00;
 const REG_SW_INT_FACTOR_FLAGS: u16 = 0xF01;
@@ -43,6 +42,22 @@ pub unsafe fn handle_interrupt(cpu: *mut super::CPU, index: usize, bit: u8){
 
     if ((*cpu).interrupts[index].mask_reg & (0x1 << bit)) > 0{
         (*cpu).interrupts[index].triggered = true;
+    }
+}
+
+pub unsafe fn process_interrupt(cpu: *mut super::CPU){
+    for i in 0..(*cpu).interrupts.len(){
+        if (*cpu).interrupts[i].triggered{
+            ram::set_memory(cpu, (*cpu).stack_pointer - 1, ((*cpu).stack_pointer >> 8) & 0xF);
+            ram::set_memory(cpu, (*cpu).stack_pointer - 2, ((*cpu).stack_pointer >> 4) & 0xF);
+            ram::set_memory(cpu, (*cpu).stack_pointer - 3, (*cpu).stack_pointer & 0xF);
+            (*cpu).stack_pointer = ((*cpu).stack_pointer - 3) & 0xFF;
+            (*cpu).flags = (*cpu).flags & & !(0b1000);
+            (*cpu).new_pointer = 1 | ((((*cpu).new_pointer >> 4) & 0x1) << 4);
+            (*cpu).program_counter = ((*cpu).interrupts[i].value & 0xFF) | 256 | ((((*cpu).program_counter >> 12) & 0x1) << 12);
+            (*cpu).ref_ts = super::wait_cycles(cpu, (*cpu).ref_ts, 12);
+            (*cpu).interrupts[i].triggered = false;
+        }
     }
 }
 
@@ -217,7 +232,7 @@ pub unsafe fn get_io(cpu: *mut super::CPU, pointer: u16) -> u16{
         REG_PROG_TIMER_CLK_SEL => {
 
         }
-        _ => println!("ERROR")
+        _ => println!("ERROR GET IO")
     }
     return 0;
 }
@@ -246,7 +261,7 @@ pub unsafe fn set_io(cpu: *mut super::CPU, pointer: u16, value: u16){
             (*cpu).program_timer_reload = value | ((*cpu).program_timer_reload & 0xF0);
         }
         REG_PROG_TIMER_RELOAD_DATA_H => {
-            (*cpu).program_timer_reload = ((*cpu).program_timer_reload & 0xF0) | (value << 4);
+            (*cpu).program_timer_reload = ((*cpu).program_timer_reload & 0xF) | (value << 4);
         }
         REG_K00_K03_INPUT_PORT => {
 
@@ -296,8 +311,6 @@ pub unsafe fn set_io(cpu: *mut super::CPU, pointer: u16, value: u16){
         REG_PROG_TIMER_CLK_SEL => {
 
         }
-        _ => {
-
-        }
+        _ => println!("ERROR SET IO")
     }
 }

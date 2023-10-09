@@ -1,8 +1,12 @@
 use std::fs;
+use std::{thread, time};
 
 mod instruction_set;
 mod ram;
 pub mod interrupts;
+
+const TIMER_256HZ_PERIOD: u64 = 128;
+const TICK_FREQUENCY: u64 = 32768;
 
 pub struct CPU {
     pub register_a: u16,
@@ -20,8 +24,11 @@ pub struct CPU {
     pub program_timer_reload: u16,
     pub input_port_state: [u16; 2],
     pub program_timer_enabled: bool,
-    pub prog_timer_timestamp: u16,
-    pub tick_counter: u16,
+    pub prog_timer_timestamp: u64,
+    pub tick_counter: u64,
+    pub frequency: u64,
+    pub ref_ts: u64,
+    pub previous_opcode_cycles: u8,
     //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug
 }
 
@@ -49,6 +56,9 @@ pub unsafe fn run_cpu(){
         program_timer_enabled: false,
         prog_timer_timestamp: 0,
         tick_counter: 0,
+        frequency: 1000000,
+        ref_ts: 0,
+        previous_opcode_cycles: 0,
     };
     let mut rom: Vec<u16> =  Vec::new();
     match read_rom("tama.b"){
@@ -56,24 +66,47 @@ pub unsafe fn run_cpu(){
         Err(err) => println!("Error: {}", err),
     }
     interrupts::init_io_state(&mut cpu);
-    loop{
+    let mut x: u64 = 0;
+    while x < 1000{
         let op: u16 = rom[cpu.program_counter as usize];
 
         cpu.next_program_counter = (cpu.program_counter + 1) & 0x1FFF;
         for opcode in instruction_set::ISA.iter(){
             if (op & opcode.mask == opcode.code) {
                 println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x} FLAGS = {:#05x}",cpu.program_counter, opcode.name, op, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b, cpu.flags);
+
+                cpu.ref_ts = wait_cycles(&mut cpu, cpu.ref_ts, cpu.previous_opcode_cycles);
+
                 (opcode.operation)(&mut cpu, op);
 
                 cpu.program_counter = cpu.next_program_counter;
+                cpu.previous_opcode_cycles = opcode.cycles;
 
-                if opcode.name != "PSET"{
+                if (opcode.name != "PSET"){
                     cpu.new_pointer = (cpu.program_counter >> 8) & 0x1F;
                 }
+
+                if (cpu.program_timer_enabled && cpu.tick_counter - cpu.prog_timer_timestamp >= TIMER_256HZ_PERIOD){
+                    while (cpu.tick_counter - cpu.prog_timer_timestamp >= TIMER_256HZ_PERIOD){
+                        cpu.prog_timer_timestamp += TIMER_256HZ_PERIOD;
+                        cpu.program_timer_data -= 1;
+
+                        if (cpu.program_timer_data == 0){
+                            cpu.program_timer_data = cpu.program_timer_reload;
+                            interrupts::handle_interrupt(&mut cpu, 0, 0);
+                        }
+                    }
+                }
+
+                if ((cpu.flags & instruction_set::FLAG_I) > 0) && (opcode.name != "PSET"){
+                    interrupts::process_interrupt(&mut cpu);
+                }
+
                 break;
             }
         }
-        let _ = std::io::stdin().read_line(&mut line);
+        x+=1;
+        //let _ = std::io::stdin().read_line(&mut line);
     }
 }
 
@@ -84,4 +117,17 @@ pub fn read_rom (path: &str) -> Result<Vec<u16>, Box<dyn std::error::Error>> {
         rom16.push(((rom[n*2] as u16) << 8) | rom[n*2+1] as u16);
     }
     Ok(rom16)
+}
+
+pub unsafe fn wait_cycles(cpu: *mut CPU,time: u64, cycles: u8 ) -> u64{
+    let mut deadline: u64 = 0;
+
+    (*cpu).tick_counter += cycles as u64;
+
+    deadline = time + (cycles as u64 * (*cpu).frequency as u64) / TICK_FREQUENCY;
+
+    let ten_millis = time::Duration::from_millis(deadline);
+    //thread::sleep(ten_millis);
+
+    return deadline;
 }
