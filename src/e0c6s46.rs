@@ -4,6 +4,7 @@ use std::{thread, time};
 mod instruction_set;
 mod ram;
 pub mod interrupts;
+pub mod display;
 
 const TIMER_256HZ_PERIOD: u64 = 128;
 const TICK_FREQUENCY: u64 = 32768;
@@ -120,6 +121,7 @@ pub fn read_rom (path: &str) -> Result<Vec<u16>, Box<dyn std::error::Error>> {
 }
 
 pub unsafe fn wait_cycles(cpu: *mut CPU,time: u64, cycles: u8 ) -> u64{
+    //TODO: Needs fixing
     let mut deadline: u64 = 0;
 
     (*cpu).tick_counter += cycles as u64;
@@ -127,7 +129,8 @@ pub unsafe fn wait_cycles(cpu: *mut CPU,time: u64, cycles: u8 ) -> u64{
     deadline = time + (cycles as u64 * (*cpu).frequency as u64) / TICK_FREQUENCY;
 
     let ten_millis = time::Duration::from_millis(deadline);
-    //thread::sleep(ten_millis);
+
+    thread::sleep(ten_millis / 100000);
 
     return deadline;
 }
