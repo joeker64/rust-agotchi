@@ -11,11 +11,13 @@ use std::{thread, time};
 fn main() {
     let mut screen: sdl2::render::Canvas<sdl2::video::Window>;
     match (e0c6s46::display::create_display()){
-        Ok(data) => screen = data,
+        Ok(data) => {
+            screen = data;
+            unsafe{
+                e0c6s46::run_cpu(screen);
+            }
+        }
         Err(err) => println!("Error: {}", err),
     };
-    unsafe{
-        e0c6s46::run_cpu();
-    }
-    thread::sleep(time::Duration::from_secs(2));
+    //thread::sleep(time::Duration::from_secs(2));
 }
