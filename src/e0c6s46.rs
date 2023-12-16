@@ -30,6 +30,7 @@ pub struct CPU {
     pub frequency: u64,
     pub ref_ts: u64,
     pub previous_opcode_cycles: u8,
+    pub display: display::display_values,
     //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug
 }
 
@@ -37,7 +38,7 @@ pub struct test {
     pub operation: unsafe fn (*mut CPU, u16),
 }
 
-pub unsafe fn run_cpu(){
+pub unsafe fn run_cpu(mut screen: sdl2::render::Canvas<sdl2::video::Window>){
     let mut line = String::new();
     let mut cpu: CPU = CPU {
         register_a: 0,
@@ -57,9 +58,10 @@ pub unsafe fn run_cpu(){
         program_timer_enabled: false,
         prog_timer_timestamp: 0,
         tick_counter: 0,
-        frequency: 1000000,
+        frequency: 1,//1000000,
         ref_ts: 0,
         previous_opcode_cycles: 0,
+        display: display::init_display_values(),
     };
     let mut rom: Vec<u16> =  Vec::new();
     match read_rom("tama.b"){
@@ -68,7 +70,7 @@ pub unsafe fn run_cpu(){
     }
     interrupts::init_io_state(&mut cpu);
     let mut x: u64 = 0;
-    while x < 1000{
+    while x < 10000{
         let op: u16 = rom[cpu.program_counter as usize];
 
         cpu.next_program_counter = (cpu.program_counter + 1) & 0x1FFF;
@@ -106,7 +108,9 @@ pub unsafe fn run_cpu(){
                 break;
             }
         }
+        screen = display::update_display(screen, &mut cpu);
         x+=1;
+        //println!("LCD MATRIX: \n {:?}", cpu.display.lcd_matrix);
         //let _ = std::io::stdin().read_line(&mut line);
     }
 }
