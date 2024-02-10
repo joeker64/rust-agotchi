@@ -6,6 +6,7 @@ mod ram;
 pub mod interrupts;
 pub mod display;
 
+const TIMER_1HZ_PERIOD: u64 = 32768;
 const TIMER_256HZ_PERIOD: u64 = 128;
 const TICK_FREQUENCY: u64 = 32768;
 
@@ -31,6 +32,7 @@ pub struct CPU {
     pub ref_ts: u64,
     pub previous_opcode_cycles: u8,
     pub display: display::display_values,
+    pub clk_timer_timestamp: u64
     //pub call_depth: u16, - Only used for debug, look into way of adding this only if compiled with debug
 }
 
@@ -62,6 +64,7 @@ pub unsafe fn run_cpu(mut screen: sdl2::render::Canvas<sdl2::video::Window>){
         ref_ts: 0,
         previous_opcode_cycles: 0,
         display: display::init_display_values(),
+        clk_timer_timestamp: 0,
     };
     let mut rom: Vec<u16> =  Vec::new();
     match read_rom("tama.b"){
@@ -70,13 +73,13 @@ pub unsafe fn run_cpu(mut screen: sdl2::render::Canvas<sdl2::video::Window>){
     }
     interrupts::init_io_state(&mut cpu);
     let mut x: u64 = 0;
-    while x < 10000{
+    while x < 90000{
         let op: u16 = rom[cpu.program_counter as usize];
 
         cpu.next_program_counter = (cpu.program_counter + 1) & 0x1FFF;
         for opcode in instruction_set::ISA.iter(){
             if (op & opcode.mask == opcode.code) {
-                println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x} FLAGS = {:#05x}",cpu.program_counter, opcode.name, op, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b, cpu.flags);
+                // println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x} FLAGS = {:#05x}",cpu.program_counter, opcode.name, op, cpu.stack_pointer, cpu.new_pointer, cpu.register_x, cpu.register_y, cpu.register_a, cpu.register_b, cpu.flags);
 
                 cpu.ref_ts = wait_cycles(&mut cpu, cpu.ref_ts, cpu.previous_opcode_cycles);
 
@@ -87,6 +90,14 @@ pub unsafe fn run_cpu(mut screen: sdl2::render::Canvas<sdl2::video::Window>){
 
                 if (opcode.name != "PSET"){
                     cpu.new_pointer = (cpu.program_counter >> 8) & 0x1F;
+                }
+
+                if (cpu.tick_counter - cpu.clk_timer_timestamp >= TIMER_1HZ_PERIOD){
+                    while (cpu.tick_counter - cpu.clk_timer_timestamp >= TIMER_1HZ_PERIOD){
+                        cpu.clk_timer_timestamp += TIMER_1HZ_PERIOD;
+                    }
+
+                    interrupts::handle_interrupt(&mut cpu, 5, 3);
                 }
 
                 if (cpu.program_timer_enabled && cpu.tick_counter - cpu.prog_timer_timestamp >= TIMER_256HZ_PERIOD){
