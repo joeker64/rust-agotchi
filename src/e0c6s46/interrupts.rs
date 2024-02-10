@@ -48,7 +48,6 @@ pub unsafe fn handle_interrupt(cpu: *mut super::CPU, index: usize, bit: u8){
 pub unsafe fn process_interrupt(cpu: *mut super::CPU){
     for i in 0..(*cpu).interrupts.len(){
         if (*cpu).interrupts[i].triggered{
-            //println!("TEST");
             ram::set_memory(cpu, (*cpu).stack_pointer - 1, ((*cpu).program_counter >> 8) & 0xF);
             ram::set_memory(cpu, (*cpu).stack_pointer - 2, ((*cpu).program_counter >> 4) & 0xF);
             ram::set_memory(cpu, (*cpu).stack_pointer - 3, (*cpu).program_counter & 0xF);
