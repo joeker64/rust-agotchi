@@ -1,6 +1,7 @@
 use std::fs;
 use std::{thread, time};
 
+
 mod instruction_set;
 mod ram;
 pub mod interrupts;
@@ -40,7 +41,7 @@ pub struct test {
     pub operation: unsafe fn (*mut CPU, u16),
 }
 
-pub unsafe fn run_cpu(mut screen: sdl2::render::Canvas<sdl2::video::Window>){
+pub unsafe fn run_cpu(mut screen: pixels::Pixels){
     let mut line = String::new();
     let mut cpu: CPU = CPU {
         register_a: 0,

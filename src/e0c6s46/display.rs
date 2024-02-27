@@ -2,17 +2,21 @@ extern crate sdl2;
 extern crate nalgebra as na;
 use crate::e0c6s46::*;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::rect::Rect;
-use std::time::Duration;
+use winit::{
+    dpi::LogicalSize,
+    event_loop::{ControlFlow, EventLoop},
+    window::WindowBuilder,
+};
+use winit_input_helper::WinitInputHelper;
+use pixels::{Error, Pixels, SurfaceTexture};
 
 const ICON_NUMBER: u8 = 8;
 const LCD_HEIGHT: usize = 16;
 const LCD_WIDTH: usize = 32;
-const PIXEL_SIZE: u32 = 90;
+const PIXEL_SIZE: u32 = 9;
 const SEGMENT_POSITION: [u8; 40] = [0, 1, 2, 3, 4, 5, 6, 7, 32, 8, 9, 10, 11, 12 ,13 ,14, 15, 33, 34, 35, 31, 30, 29, 28, 27, 26, 25, 24, 36, 23, 22, 21, 20, 19, 18, 17, 16, 37, 38, 39];
+const WINDOW_WIDTH: u32 = 800;
+const WINDOW_HEIGHT: u32 = 600;
 
 pub struct display_values{
     pub terminal: u16,
@@ -30,43 +34,34 @@ pub fn init_display_values() -> display_values{
     }
 }
 
-pub fn create_display() -> Result<sdl2::render::Canvas<sdl2::video::Window>, String>{
-    let sdl_context = sdl2::init()?;
-    let video_subsystem = sdl_context.video()?;
+pub fn create_display(eventLoop: EventLoop<()>) -> Result<pixels::Pixels, Error>{
+    let window = {
+        let size = LogicalSize::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64);
+        let scaled_size = LogicalSize::new(WINDOW_WIDTH as f64 * 3.0, WINDOW_HEIGHT as f64 * 3.0);
+        WindowBuilder::new()
+            .with_title("Rust-Agotchi")
+            .with_inner_size(scaled_size)
+            .with_min_inner_size(size)
+            .build(&eventLoop)
+            .unwrap()
+    };
 
-    let window = video_subsystem
-        .window("rust-sdl2 demo: Video", 800, 600)
-        .position_centered()
-        .opengl()
-        .build()
-        .map_err(|e| e.to_string())?;
-
-    let mut canvas = window.into_canvas().build().map_err(|e| e.to_string())?;
-
-    canvas.set_draw_color(Color::RGB(255, 255, 255));
-    canvas.clear();
-    canvas.present();
-
-    return Ok(canvas);
+    let mut pixels = {
+        let window_size = window.inner_size();
+        let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
+        Pixels::new(WINDOW_WIDTH, WINDOW_HEIGHT, surface_texture)?
+    };
+    return Ok(pixels);
 }
-pub unsafe fn update_display(mut display: sdl2::render::Canvas<sdl2::video::Window>, cpu: *mut super::CPU) -> sdl2::render::Canvas<sdl2::video::Window>{
+pub unsafe fn update_display(mut display: pixels::Pixels, cpu: *mut super::CPU) -> pixels::Pixels{
     let mut p_row:u16 = 0;
 
     for (position, pixel) in (*cpu).display.lcd_matrix.iter().enumerate(){
         if position % LCD_WIDTH == 0{
             p_row+=1;
         }
-        // println!("row: {}, pos: {}, value: {}",p_row, position % LCD_WIDTH + 1, pixel);
-        if *pixel == 1{
-            display.set_draw_color(Color::RGB(0, 0, 128));
-            display.fill_rect(Rect::new(((position % LCD_WIDTH) * 10 + 50 + 50) as i32,((p_row - 1) * 10 + 50 + 50) as i32  ,PIXEL_SIZE, PIXEL_SIZE));
-        }else{
-            display.set_draw_color(Color::RGB(255, 255, 255));
-            display.fill_rect(Rect::new(((position % LCD_WIDTH) * 10 + 50 + 50) as i32,((p_row - 1) * 10 + 50 + 50) as i32  ,PIXEL_SIZE, PIXEL_SIZE));
-        }
-
     }
-    display.present();
+    display.render();
     return display
 }
 
