@@ -34,15 +34,15 @@ pub fn init_display_values() -> display_values{
     }
 }
 
-pub fn create_display(eventLoop: EventLoop<()>) -> Result<pixels::Pixels, Error>{
+pub fn create_display(event_loop: &EventLoop<()>) -> Result<(pixels::Pixels, winit::window::Window), Error>{
     let window = {
         let size = LogicalSize::new(WINDOW_WIDTH as f64, WINDOW_HEIGHT as f64);
-        let scaled_size = LogicalSize::new(WINDOW_WIDTH as f64 * 3.0, WINDOW_HEIGHT as f64 * 3.0);
         WindowBuilder::new()
-            .with_title("Rust-Agotchi")
-            .with_inner_size(scaled_size)
+            .with_title("Hello Pixels")
+            .with_inner_size(size)
+            .with_resizable(false)
             .with_min_inner_size(size)
-            .build(&eventLoop)
+            .build(&event_loop)
             .unwrap()
     };
 
@@ -51,8 +51,10 @@ pub fn create_display(eventLoop: EventLoop<()>) -> Result<pixels::Pixels, Error>
         let surface_texture = SurfaceTexture::new(window_size.width, window_size.height, &window);
         Pixels::new(WINDOW_WIDTH, WINDOW_HEIGHT, surface_texture)?
     };
-    return Ok(pixels);
+
+    Ok((pixels, window))
 }
+
 pub unsafe fn update_display(mut display: pixels::Pixels, cpu: *mut super::CPU) -> pixels::Pixels{
     let mut p_row:u16 = 0;
 
