@@ -77,15 +77,15 @@ pub unsafe fn update_display(frame: &mut [u8], cpu: &mut super::CPU) {
         //     pixel
         // );
         if *pixel == 1 {
-            frame[(((position * 4) + 40) + ((p_row as usize + 5) * 320))] = 0xff;
+            frame[(((position%LCD_WIDTH * 4) + 40) + ((p_row as usize + 5) * 320))] = 0xff;
             // frame[(position * 4 + 121) + ((p_row - 1) * 320) as usize] = 0x00;
             // frame[(position * 4 + 122) + ((p_row - 1) * 320) as usize] = 0x00;
-            frame[(position * 4 + 43) + ((p_row as usize + 5) * 320)] = 0xff;
+            frame[(position%LCD_WIDTH  * 4 + 43) + ((p_row as usize + 5) * 320)] = 0xff;
         } else {
             // frame[(position * 4 + 120) + ((p_row - 1) * 320) as usize] = 0xff;
             // frame[(position * 4 + 121) + ((p_row - 1) * 320) as usize] = 0x00;
             // frame[(position * 4 + 122) + ((p_row - 1) * 320) as usize] = 0x00;
-            frame[(position * 4 + 43) + ((p_row as usize + 5) * 320)] = 0x00;
+            frame[(position%LCD_WIDTH  * 4 + 43) + ((p_row as usize + 5) * 320)] = 0x00;
         }
     }
 }
@@ -96,9 +96,6 @@ unsafe fn set_lcd_matrix_values(
     y_coordinate: u16,
     value: u16,
 ) {
-    if value == 1 {
-        println!("1!");
-    }
     (*cpu).display.lcd_matrix[(x_coordinate as usize, y_coordinate as usize)] = value;
 }
 
