@@ -1,39 +1,14 @@
-use crate::e0c6s46::display;
 use crate::e0c6s46::CPU;
-use pixels::{Error, Pixels, SurfaceTexture};
-use winit::{
-    dpi::LogicalSize,
-    event::{Event, VirtualKeyCode},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
+use pixels::{Pixels, SurfaceTexture};
+use winit::{dpi::LogicalSize, window::WindowBuilder};
 
 const LCD_WIDTH: usize = 32;
 const WINDOW_WIDTH: u32 = 800;
 const WINDOW_HEIGHT: u32 = 600;
 
-pub struct WinitEventLoop {
-    pub event_loop: winit::event_loop::EventLoop<()>,
-}
-
 pub struct pixel_display {
     pub screen: pixels::Pixels,
     pub window: winit::window::Window,
-}
-
-impl display::EventLoopTrait for WinitEventLoop {
-    fn new() -> Self {
-        WinitEventLoop {
-            event_loop: EventLoop::new(),
-        }
-    }
-    fn run(self, cpu: CPU, rom: Vec<u16>) {
-        self.event_loop.run(move |event, _, control_flow| {
-            if let Event::RedrawRequested(_) = event {
-                println!("TEST");
-            }
-        });
-    }
 }
 
 impl pixel_display {
@@ -59,10 +34,7 @@ impl pixel_display {
             Ok(data) => screen = data,
             Err(_) => panic!("ERROR"),
         }
-        return pixel_display {
-            window: window,
-            screen: screen,
-        };
+        return pixel_display { window, screen };
     }
     pub fn update_display(&mut self, cpu: &CPU) {
         let frame = self.screen.frame_mut();
