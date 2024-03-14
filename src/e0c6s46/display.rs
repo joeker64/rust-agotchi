@@ -8,7 +8,6 @@ use winit::{
     event_loop::{ControlFlow, EventLoop},
     window::WindowBuilder,
 };
-use winit_input_helper::WinitInputHelper;
 
 const ICON_NUMBER: u8 = 8;
 const LCD_HEIGHT: usize = 16;
@@ -26,6 +25,16 @@ pub struct display_values {
     pub segment: u16,
     pub icon_buffer: [u16; ICON_NUMBER as usize],
     pub lcd_matrix: na::SMatrix<u16, LCD_WIDTH, LCD_HEIGHT>,
+}
+
+pub trait EventLoopTrait {
+    fn new() -> Self;
+    fn run(self, cpu: CPU, rom: Vec<u16>);
+}
+
+pub trait Display<T> {
+    fn create_display(event_loop: T) -> Self;
+    fn update_display(&mut self, cpu: CPU);
 }
 
 pub fn init_display_values() -> display_values {
@@ -77,15 +86,15 @@ pub unsafe fn update_display(frame: &mut [u8], cpu: &mut super::CPU) {
         //     pixel
         // );
         if *pixel == 1 {
-            frame[(((position%LCD_WIDTH * 4) + 40) + ((p_row as usize + 5) * 320))] = 0xff;
+            frame[(((position % LCD_WIDTH * 4) + 40) + ((p_row as usize + 5) * 320))] = 0xff;
             // frame[(position * 4 + 121) + ((p_row - 1) * 320) as usize] = 0x00;
             // frame[(position * 4 + 122) + ((p_row - 1) * 320) as usize] = 0x00;
-            frame[(position%LCD_WIDTH  * 4 + 43) + ((p_row as usize + 5) * 320)] = 0xff;
+            frame[(position % LCD_WIDTH * 4 + 43) + ((p_row as usize + 5) * 320)] = 0xff;
         } else {
             // frame[(position * 4 + 120) + ((p_row - 1) * 320) as usize] = 0xff;
             // frame[(position * 4 + 121) + ((p_row - 1) * 320) as usize] = 0x00;
             // frame[(position * 4 + 122) + ((p_row - 1) * 320) as usize] = 0x00;
-            frame[(position%LCD_WIDTH  * 4 + 43) + ((p_row as usize + 5) * 320)] = 0x00;
+            frame[(position % LCD_WIDTH * 4 + 43) + ((p_row as usize + 5) * 320)] = 0x00;
         }
     }
 }
