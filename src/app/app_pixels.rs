@@ -1,20 +1,13 @@
-use pixels::{Error, Pixels, SurfaceTexture};
-use winit::{
-    dpi::LogicalSize,
-    event::{Event, VirtualKeyCode},
-    event_loop::{ControlFlow, EventLoop},
-    window::WindowBuilder,
-};
-use winit_input_helper::WinitInputHelper;
-
+use super::App;
 use crate::{
-    create_e06s46_cpu,
-    display::{self, Display},
-    gui::pixels_gui::{self, pixel_display},
+    gui::pixels_gui::{self},
     CPU,
 };
-
-use super::App;
+use winit::{
+    event::{Event, VirtualKeyCode},
+    event_loop::{ControlFlow, EventLoop},
+};
+use winit_input_helper::WinitInputHelper;
 
 pub struct PixelApp {
     event_loop: winit::event_loop::EventLoop<()>,
