@@ -44,7 +44,7 @@ impl CPU {
             if (op & opcode.mask == opcode.code) {
                 //println!("{:#06x}: {} ({:#05x}) SP = {:#05x} NP = {:#05x} X = {:#05x} Y = {:#05x} A = {:#05x} B = {:#05x} FLAGS = {:#05x}",self.program_counter, opcode.name, op, self.stack_pointer, self.new_pointer, self.register_x, self.register_y, self.register_a, self.register_b, self.flags);
 
-                //self.ref_ts = wait_cycles(self, self.ref_ts, self.previous_opcode_cycles);
+                self.ref_ts = wait_cycles(self, self.ref_ts, self.previous_opcode_cycles);
 
                 (opcode.operation)(self, op);
 

@@ -7,7 +7,8 @@ use app::App;
 use crate::e0c6s46::*;
 
 fn main() {
-    let app = app::app_pixels::PixelApp::new();
+    // let app = app::app_pixels::PixelApp::new();
+    let app = app::app_sdl2::Sdl2App::new();
     let cpu: CPU = create_e06s46_cpu();
     let mut rom: Vec<u16> = Vec::new();
     match read_rom("../tama.b") {
