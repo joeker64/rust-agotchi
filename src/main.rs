@@ -1,23 +1,20 @@
+mod app;
 mod e0c6s46;
+mod gui;
+
+use app::App;
 
 use crate::e0c6s46::*;
 
-use sdl2::event::Event;
-use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use std::time::Duration;
-
-use std::{thread, time};
 fn main() {
-    let mut screen: sdl2::render::Canvas<sdl2::video::Window>;
-    match (e0c6s46::display::create_display()){
-        Ok(data) => {
-            screen = data;
-            unsafe{
-                e0c6s46::run_cpu(screen);
-            }
-        }
+    //let app = app::app_pixels::PixelApp::new();
+    let app = app::app_sdl2::Sdl2App::new();
+    let cpu: CPU = create_e06s46_cpu();
+    let mut rom: Vec<u16> = Vec::new();
+    match read_rom("tama.b") {
+        Ok(data) => rom = data,
         Err(err) => println!("Error: {}", err),
-    };
-    //thread::sleep(time::Duration::from_secs(2));
+    }
+    app.run(Box::new(cpu), rom);
+    // env_logger::init();
 }
