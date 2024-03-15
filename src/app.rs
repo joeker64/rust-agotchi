@@ -1,5 +1,5 @@
 pub mod app_pixels;
-
+pub mod app_sdl2;
 use crate::e0c6s46::CPU;
 
 pub trait App {
