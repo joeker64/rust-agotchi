@@ -30,8 +30,7 @@ impl Sdl2Display {
             .build()
             .map_err(|e| e.to_string())
             .unwrap();
-        canvas.set_draw_color(Color::RGB(0, 0, 0));
-        canvas.clear();
+        // canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.present();
         return Self {
             canvas,
@@ -40,6 +39,7 @@ impl Sdl2Display {
         };
     }
     pub fn update_display(&mut self, cpu: &CPU) {
+        self.canvas.clear();
         let mut p_row: u16 = 0;
 
         for (position, pixel) in (*cpu).display.lcd_matrix.iter().enumerate() {
