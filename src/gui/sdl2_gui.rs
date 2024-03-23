@@ -7,6 +7,8 @@ const WINDOW_HEIGHT: u32 = 600;
 const PIXEL_SIZE: u32 = 9;
 const LCD_HEIGHT: usize = 16;
 const LCD_WIDTH: usize = 32;
+const OFFSET_WIDTH: usize = (WINDOW_WIDTH / 2 - 150) as usize;
+const OFFSET_HIGHT: usize = (WINDOW_HEIGHT / 2 - 200) as usize;
 
 pub struct Sdl2Display {
     pub canvas: sdl2::render::Canvas<sdl2::video::Window>,
@@ -27,10 +29,10 @@ impl Sdl2Display {
             .unwrap();
         let mut canvas = window
             .into_canvas()
+            // .present_vsync()
             .build()
             .map_err(|e| e.to_string())
             .unwrap();
-        // canvas.set_draw_color(Color::RGB(0, 0, 0));
         canvas.present();
         return Self {
             canvas,
@@ -39,6 +41,7 @@ impl Sdl2Display {
         };
     }
     pub fn update_display(&mut self, cpu: &CPU) {
+        self.canvas.set_draw_color(Color::RGB(0, 0, 0));
         self.canvas.clear();
         let mut p_row: u16 = 0;
 
@@ -48,18 +51,10 @@ impl Sdl2Display {
             }
             // println!("row: {}, pos: {}, value: {}",p_row, position % LCD_WIDTH + 1, pixel);
             if *pixel == 1 {
-                self.canvas.set_draw_color(Color::RGB(0, 0, 128));
-                self.canvas.fill_rect(Rect::new(
-                    ((position % LCD_WIDTH) * 10 + 50 + 50) as i32,
-                    ((p_row - 1) * 10 + 50 + 50) as i32,
-                    PIXEL_SIZE,
-                    PIXEL_SIZE,
-                ));
-            } else {
                 self.canvas.set_draw_color(Color::RGB(255, 255, 255));
                 self.canvas.fill_rect(Rect::new(
-                    ((position % LCD_WIDTH) * 10 + 50 + 50) as i32,
-                    ((p_row - 1) * 10 + 50 + 50) as i32,
+                    (OFFSET_WIDTH + (position % LCD_WIDTH) * PIXEL_SIZE as usize) as i32,
+                    (OFFSET_HIGHT as u16 + (p_row - 1) * PIXEL_SIZE as u16 + 50 + 50) as i32,
                     PIXEL_SIZE,
                     PIXEL_SIZE,
                 ));
