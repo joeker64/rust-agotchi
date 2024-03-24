@@ -49,15 +49,14 @@ impl Sdl2Display {
             if position % LCD_WIDTH == 0 {
                 p_row += 1;
             }
-            // println!("row: {}, pos: {}, value: {}",p_row, position % LCD_WIDTH + 1, pixel);
             if *pixel == 1 {
                 self.canvas.set_draw_color(Color::RGB(255, 255, 255));
                 self.canvas.fill_rect(Rect::new(
-                    (OFFSET_WIDTH + (position % LCD_WIDTH) * PIXEL_SIZE as usize) as i32,
-                    (OFFSET_HIGHT as u16 + (p_row - 1) * PIXEL_SIZE as u16 + 50 + 50) as i32,
+                    (OFFSET_WIDTH + (position % LCD_WIDTH) * (PIXEL_SIZE + 2) as usize) as i32,
+                    (OFFSET_HIGHT as u16 + (p_row - 1) * (PIXEL_SIZE + 2) as u16 + 50 + 50) as i32,
                     PIXEL_SIZE,
                     PIXEL_SIZE,
-                ));
+                )).unwrap();
             }
         }
         self.canvas.present();

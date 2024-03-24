@@ -45,7 +45,7 @@ pub fn set_lcd(cpu: *mut super::CPU, pointer: u16, value: u16) {
 
     for x in 0..4 {
         unsafe {
-            set_lcd_values(cpu, seg, com0 + 1, (value >> x) & 0x1);
+            set_lcd_values(cpu, seg, com0 + x, (value >> x) & 0x1);
         }
     }
 }
