@@ -3,7 +3,11 @@ use std::time::Duration;
 use sdl2::{event::Event, keyboard::Keycode};
 
 use super::App;
-use crate::{display, gui::sdl2_gui};
+use crate::{
+    display,
+    gui::sdl2_gui,
+    interrupts::{set_button_left, set_button_middle, set_button_right},
+};
 
 pub struct Sdl2App {
     event_loop: sdl2::EventPump,
@@ -27,6 +31,18 @@ impl App for Sdl2App {
                         keycode: Some(Keycode::Escape),
                         ..
                     } => break 'running,
+                    Event::KeyDown {
+                        keycode: Some(Keycode::Q),
+                        ..
+                    } => unsafe { set_button_left(cpu.as_mut()) },
+                    Event::KeyDown {
+                        keycode: Some(Keycode::W),
+                        ..
+                    } => unsafe { set_button_middle(cpu.as_mut()) },
+                    Event::KeyDown {
+                        keycode: Some(Keycode::E),
+                        ..
+                    } => unsafe { set_button_right(cpu.as_mut()) },
                     _ => {}
                 }
             }
